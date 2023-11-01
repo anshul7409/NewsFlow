@@ -20,7 +20,7 @@ else:
    print("no news available")
    pass
 
-print(lis)
+
 
 news_html = []
 for i in range(0,len(lis)):
@@ -37,3 +37,4 @@ for element in news_html:
         news_data.append("N/A")
 
 print(news_data)
+print(lis)
