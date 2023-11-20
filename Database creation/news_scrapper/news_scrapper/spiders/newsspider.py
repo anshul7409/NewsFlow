@@ -32,8 +32,6 @@ class NewsspiderSpider(scrapy.Spider):
                 }
 
                 yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
-        else:
-            yield {'unique_id': str(uuid.uuid4())[:8], 'url':'','headline': '','Src':'','date_time': '','description':''}
 
     def parse_news_page(self, response):
         item = response.meta['item']
@@ -41,5 +39,5 @@ class NewsspiderSpider(scrapy.Spider):
         if news_content:
            item['description'] = news_content.getall()
         else:
-           item['description'] = ["N/A"] 
+           item['description'] = ["premium news"] 
         yield item
