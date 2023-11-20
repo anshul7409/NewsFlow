@@ -1,15 +1,12 @@
 import scrapy
-
-
-import scrapy
+import uuid
 
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'tech']
+    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'isreal']
 
     def parse(self, response):
-        # Your scraping logic to extract data from the initial page
         news_data = response.css('div.uwU81')
         if news_data:
             for news_sample in news_data:
@@ -26,15 +23,32 @@ class NewsspiderSpider(scrapy.Spider):
                       date_time = date_time_text[0]
                       srcc = ''
                 
+<<<<<<< HEAD
+                item = {
+                    'unique_id': str(uuid.uuid4())[:8],  # Generate a unique ID for each item and take the first 8 characters
+=======
                     
                 # Extracted data from the initial page
                 item = {
+>>>>>>> master
                     'url': response.urljoin(news_sample.css('a').attrib['href']),
                     'headline': meta_.css('div.fHv_i span::text').get(),
                     'Src': srcc,
                     'date_time': date_time,
                 }
 
+<<<<<<< HEAD
+                yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
+
+    def parse_news_page(self, response):
+        item = response.meta['item']
+        news_content = response.css('div.JuyWl ::text')
+        if news_content:
+           item['description'] = news_content.getall()
+        else:
+           item['description'] = ["premium news"] 
+        yield item
+=======
                 # Follow the URL and parse the news page
                 yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
         else:
@@ -49,3 +63,4 @@ class NewsspiderSpider(scrapy.Spider):
        # item['additional_field'] = response.css('div.additional_data::text').get()
 
         yield item
+>>>>>>> master
