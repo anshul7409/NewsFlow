@@ -25,6 +25,7 @@ class NewsspiderSpider(scrapy.Spider):
                     if len(date_time_text) == 1 :
                       date_time = date_time_text[0]
                       srcc = ''
+                
                     
                 # Extracted data from the initial page
                 item = {
