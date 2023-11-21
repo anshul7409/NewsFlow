@@ -7,7 +7,7 @@ import openai_summarize
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'tech']
+    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Politics']
     openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
     def parse(self, response):
         news_data = response.css('div.uwU81')
@@ -40,9 +40,10 @@ class NewsspiderSpider(scrapy.Spider):
         item = response.meta['item']
         news_content = response.css('div.JuyWl ::text')
         if news_content:
-            item['description'] = ' '.join(news_content.getall())  # Join all strings into one
+            item['description'] = ' '.join(news_content.getall()) 
             item['len'] = len(item['description'])
             item['summary'] =  self.openai_summarizer.summarize_text(item['description'])
+            item['len_summary'] = len(item['summary'])
         else:
             item['description'] = "premium news"
         yield item
