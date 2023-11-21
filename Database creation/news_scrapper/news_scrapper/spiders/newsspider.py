@@ -27,7 +27,7 @@ class NewsspiderSpider(scrapy.Spider):
                       srcc = ''
                 
                 item = {
-                    'unique_id': str(uuid.uuid4())[:8],  # Generate a unique ID for each item and take the first 8 characters
+                    'unique_id': str(uuid.uuid4())[:8],  
                     'url': response.urljoin(news_sample.css('a').attrib['href']),
                     'headline': meta_.css('div.fHv_i span::text').get(),
                     'Src': srcc,
@@ -40,9 +40,9 @@ class NewsspiderSpider(scrapy.Spider):
         item = response.meta['item']
         news_content = response.css('div.JuyWl ::text')
         if news_content:
-            item['description'] = news_content.getall()
+            item['description'] = ' '.join(news_content.getall())  # Join all strings into one
             item['len'] = len(item['description'])
-            item['summary'] =  self.openai_summarizer.summarize_text(item['description'][0])
+            item['summary'] =  self.openai_summarizer.summarize_text(item['description'])
         else:
-           item['description'] = ["premium news"] 
+            item['description'] = "premium news"
         yield item
