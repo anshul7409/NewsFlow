@@ -1,6 +1,6 @@
 import scrapy
 import uuid
-from config import Config
+from .config import Config
 import openai_summarize
 
 
