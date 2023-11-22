@@ -7,7 +7,7 @@ from news_scrapper.items import NewsItem
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Openai']
+    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Politics']
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
 
     def parse(self, response):
@@ -28,7 +28,7 @@ class NewsspiderSpider(scrapy.Spider):
                       srcc = ''
 
                 item = NewsItem()
-                item['unique_id'] = str(uuid.uuid4())[:8]
+                item['unique_id'] = str(uuid.uuid4())[:13]
                 item['url'] = response.urljoin(news_sample.css('a').attrib['href'])
                 item['headline'] = meta_.css('div.fHv_i span::text').get()
                 item['Src'] = srcc
