@@ -7,7 +7,7 @@ from news_scrapper.items import NewsItem
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Politics']
+    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Narendra-Modi']
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
 
     def parse(self, response):
