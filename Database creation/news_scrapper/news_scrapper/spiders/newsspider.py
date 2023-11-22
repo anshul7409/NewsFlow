@@ -1,13 +1,13 @@
 import scrapy
 import uuid
-from .config import Config
-import openai_summarize
-
+# from .config import Config
+# import openai_summarize
+from news_scrapper.items import NewsItem
 
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Openai']
+    start_urls = ['https://timesofindia.indiatimes.com/topic/'+'Business']
     openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
     def parse(self, response):
         news_data = response.css('div.uwU81')
@@ -25,14 +25,13 @@ class NewsspiderSpider(scrapy.Spider):
                     if len(date_time_text) == 1 :
                       date_time = date_time_text[0]
                       srcc = ''
-                
-                item = {
-                    'unique_id': str(uuid.uuid4())[:8],  
-                    'url': response.urljoin(news_sample.css('a').attrib['href']),
-                    'headline': meta_.css('div.fHv_i span::text').get(),
-                    'Src': srcc,
-                    'date_time': date_time,
-                }
+
+                item = NewsItem()
+                item['unique_id'] = str(uuid.uuid4())[:13]
+                item['url'] = response.urljoin(news_sample.css('a').attrib['href'])
+                item['headline'] = meta_.css('div.fHv_i span::text').get()
+                item['Src'] = srcc
+                item['date_time'] = date_time
 
                 yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
 
@@ -40,10 +39,10 @@ class NewsspiderSpider(scrapy.Spider):
         item = response.meta['item']
         news_content = response.css('div.JuyWl ::text')
         if news_content:
-            item['description'] = ' '.join(news_content.getall()) 
+            item['description'] = ' '.join(news_content.getall())
             item['len'] = len(item['description'])
-            item['summary'] =  self.openai_summarizer.summarize_text(item['description'])
-            item['len_summary'] = len(item['summary'])
+            # item['summary'] =  self.openai_summarizer.summarize_text(item['description'])
+            # item['len_summary'] = len(item['summary'])
         else:
             item['description'] = "premium news"
         yield item
