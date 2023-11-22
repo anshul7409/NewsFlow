@@ -19,6 +19,10 @@ class NewsScrapperPipeline:
 
         # Remove unwanted characters from description
         adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+        
+        if adapter['len']>=2000:
+            adapter['description'] = adapter['description'][0:2000]
+            adapter['len'] = 2000
 
         # Convert date_time to datetime object
         date_time_str = adapter['date_time'].strip()
