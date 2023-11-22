@@ -47,3 +47,6 @@ class NewsspiderSpider(scrapy.Spider):
         else:
             item['description'] = "premium news"
         yield item
+
+# scrapy crawl newsspider -o news1.csv
+# o -> appending , O -> overwriting
