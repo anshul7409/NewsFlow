@@ -16,7 +16,8 @@ class NewsScrapperPipeline:
         # Remove unwanted spaces 
         adapter['description'] = ' '.join(adapter['description'].split())
         adapter['Src'] = ' '.join(adapter['Src'].split())
-
+        adapter['headline'] = adapter['headline'].strip()
+        adapter['headline'] = ' '.join(adapter['headline'].split())
         # Remove unwanted characters from description
         adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
         
