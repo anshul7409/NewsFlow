@@ -13,11 +13,16 @@ class NewsScrapperPipeline:
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
-        # Remove unwanted spaces in description
+        # Remove unwanted spaces 
         adapter['description'] = ' '.join(adapter['description'].split())
+        adapter['Src'] = ' '.join(adapter['Src'].split())
 
         # Remove unwanted characters from description
         adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+        
+        if adapter['len']>=2000:
+            adapter['description'] = adapter['description'][0:2000]
+            adapter['len'] = 2000
 
         # Convert date_time to datetime object
         date_time_str = adapter['date_time'].strip()
