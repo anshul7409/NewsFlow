@@ -7,9 +7,19 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from datetime import datetime
+import pymongo
 import re
 
 class NewsScrapperPipeline:
+    def __init__(self) :
+        self.conn = pymongo.MongoClient(
+            'localhost',
+            27017
+        )
+        db = self.conn['news']
+        self.collection = db['news_tb']
+        self.collection.create_index("date_time", unique=True)
+
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
@@ -32,5 +42,8 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-
+        try:
+            self.collection.insert_one(dict(item))
+        except pymongo.errors.DuplicateKeyError:
+            spider.logger.error(f"Duplicated item found: {item['date_time']}")
         return item

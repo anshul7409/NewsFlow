@@ -12,7 +12,6 @@ class NewsScrapperItem(scrapy.Item):
     pass
 
 class NewsItem(scrapy.Item):
-    unique_id = scrapy.Field()
     url = scrapy.Field()
     headline = scrapy.Field()
     Src = scrapy.Field()
