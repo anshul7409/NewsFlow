@@ -42,9 +42,6 @@ class NewsspiderSpider(scrapy.Spider):
         if news_content:
             item['description'] = ' '.join(news_content.getall())                                   
             item['len'] = len(item['description'])
-            # if item['len'] > 2000:
-            #     item['description'] = item['description'][:2000]
-            #     item['len'] = 2000
         else:
             item['description'] = "premium news"
         yield item
