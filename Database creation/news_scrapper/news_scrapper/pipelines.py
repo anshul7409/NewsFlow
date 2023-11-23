@@ -24,12 +24,15 @@ class NewsScrapperPipeline:
         adapter = ItemAdapter(item)
 
         # Remove unwanted spaces 
-        adapter['description'] = ' '.join(adapter['description'].split())
-        adapter['Src'] = ' '.join(adapter['Src'].split())
-        adapter['headline'] = adapter['headline'].strip()
-        adapter['headline'] = ' '.join(adapter['headline'].split())
-        # Remove unwanted characters from description
-        adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+        try:
+            adapter['description'] = ' '.join(adapter['description'].split())
+            adapter['Src'] = ' '.join(adapter['Src'].split())
+            adapter['headline'] = adapter['headline'].strip()
+            adapter['headline'] = ' '.join(adapter['headline'].split())
+            # Remove unwanted characters from description
+            adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+        except ValueError:
+            print("string is nonetype")
         
         if adapter['len']>=2000:
             adapter['description'] = adapter['description'][0:2000]
@@ -42,5 +45,9 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-
+        
+        try:
+            self.collection.insert_one(dict(item))
+        except pymongo.errors.DuplicateKeyError:
+            spider.logger.error(f"Duplicated item found: {item['date_time']}")
         return item
