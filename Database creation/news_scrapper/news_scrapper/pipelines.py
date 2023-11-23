@@ -42,8 +42,5 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-        try:
-            self.collection.insert_one(dict(item))
-        except pymongo.errors.DuplicateKeyError:
-            spider.logger.error(f"Duplicated item found: {item['date_time']}")
+
         return item
