@@ -7,16 +7,27 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from datetime import datetime
+import pymongo
 import re
 
 class NewsScrapperPipeline:
+    def __init__(self) :
+        self.conn = pymongo.MongoClient(
+            'localhost',
+            27017
+        )
+        db = self.conn['news']
+        self.collection = db['news_tb']
+        self.collection.create_index("date_time", unique=True)
+
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
         # Remove unwanted spaces 
         adapter['description'] = ' '.join(adapter['description'].split())
         adapter['Src'] = ' '.join(adapter['Src'].split())
-
+        adapter['headline'] = adapter['headline'].strip()
+        adapter['headline'] = ' '.join(adapter['headline'].split())
         # Remove unwanted characters from description
         adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
         
@@ -31,5 +42,5 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-
+        self.collection.insert_one(dict(item))
         return item

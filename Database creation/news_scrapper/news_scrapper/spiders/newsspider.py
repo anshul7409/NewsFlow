@@ -7,7 +7,7 @@ from news_scrapper.items import NewsItem
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
-    topic = 'picture'
+    topic = 'Tech'
     start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic]
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
 
@@ -34,7 +34,10 @@ class NewsspiderSpider(scrapy.Spider):
                 item['headline'] = meta_.css('div.fHv_i span::text').get()
                 item['Src'] = srcc
                 item['date_time'] = date_time
-
+                if item['date_time'] == '' or item['headline'] == '' or item['Src'] == '':
+                    item['date_time'] = None
+                    item['headline'] = None
+                    item['Src'] = None
                 yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
 
     def parse_news_page(self, response):
