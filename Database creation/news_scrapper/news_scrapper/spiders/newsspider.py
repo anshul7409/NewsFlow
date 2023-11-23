@@ -79,7 +79,6 @@ class NewsspiderSpider(scrapy.Spider):
     "Quantum-Cryptography",
     ]
 
-# You can use this list to iterate and search for news on various platforms.
 
     start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics]
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
