@@ -13,12 +13,12 @@ import re
 class NewsScrapperPipeline:
     def __init__(self) :
         self.conn = pymongo.MongoClient(
-            'localhost',
-            27017
+            'mongodb+srv://anshulrawat74:newsprox@cluster0.fam8ldo.mongodb.net/?retryWrites=true&w=majority'
         )
         db = self.conn['news']
         self.collection = db['news_tb']
         self.collection.create_index("date_time", unique=True)
+        self.collection.create_index("description", unique=True)
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
@@ -51,3 +51,5 @@ class NewsScrapperPipeline:
         except pymongo.errors.DuplicateKeyError:
             spider.logger.error(f"Duplicated item found: {item['date_time']}")
         return item
+    
+    # 'mongodb+srv://anshulrawat74:newsprox@cluster0.fam8ldo.mongodb.net/?retryWrites=true&w=majority'
