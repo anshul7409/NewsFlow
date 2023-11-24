@@ -141,4 +141,3 @@ class Topics:
         "Cryptocurrency-NFT-Trends",
         "Renewable-Energy-Solar-Innovations",
     ]
-
