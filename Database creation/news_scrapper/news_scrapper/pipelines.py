@@ -23,16 +23,15 @@ class NewsScrapperPipeline:
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
 
-        # Remove unwanted spaces 
+        # Remove unwanted spaces and characters
         try:
             adapter['description'] = ' '.join(adapter['description'].split())
             adapter['Src'] = ' '.join(adapter['Src'].split())
             adapter['headline'] = adapter['headline'].strip()
             adapter['headline'] = ' '.join(adapter['headline'].split())
-            # Remove unwanted characters from description
             adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
         except ValueError:
-            print("string is nonetype")
+            print("string is None-type")
         
         if adapter['len']>=2000:
             adapter['description'] = adapter['description'][0:2000]
@@ -45,7 +44,8 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-        
+
+        #Saving data into database
         try:
             self.collection.insert_one(dict(item))
         except pymongo.errors.DuplicateKeyError:
