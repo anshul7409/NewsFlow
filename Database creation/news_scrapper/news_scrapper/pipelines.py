@@ -37,7 +37,7 @@ class NewsScrapperPipeline:
         if adapter['len']>=2000:
             adapter['description'] = adapter['description'][0:2000]
             adapter['len'] = 2000
-
+ 
         # Convert date_time to datetime object
         date_time_str = adapter['date_time'].strip()
         date_time_str = date_time_str.split(" (")[0] 

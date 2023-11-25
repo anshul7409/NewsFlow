@@ -47,9 +47,6 @@ class NewsspiderSpider(scrapy.Spider):
         if news_content:
             item['description'] = ' '.join(news_content.getall())                                   
             item['len'] = len(item['description'])
-        else:
-            item['description'] = "premium news"
-        yield item
 
 # scrapy crawl newsspider -o news1.csv
 # o -> appending , O -> overwriting
