@@ -3,6 +3,7 @@ import scrapy
 # import openai_summarize
 from .list_of_topics import Topics
 from news_scrapper.items import NewsItem
+from .Db_conn import get_collection
 from transformers import pipeline
 import textwrap
 
@@ -12,6 +13,7 @@ class NewsspiderSpider(scrapy.Spider):
     topics = Topics.topics_of_news
     summarizer = pipeline('summarization')
     start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics]
+    collection  = get_collection()
     
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
 
@@ -49,7 +51,8 @@ class NewsspiderSpider(scrapy.Spider):
         if news_content:
             item['description'] = ' '.join(news_content.getall())                                   
             item['len'] = len(item['description'])
-            yield self.parse_news_summary(response, item)
+            if not self.collection.find_one({"description": item['description']}):  
+                yield self.parse_news_summary(response, item)
     
     def parse_news_summary(self,response,item):
         description = item['description']

@@ -7,18 +7,15 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from datetime import datetime
+from .spiders.Db_conn import get_collection
 import pymongo
 import re
 
+
 class NewsScrapperPipeline:
-    def __init__(self) :
-        self.conn = pymongo.MongoClient(
-            'mongodb+srv://anshulrawat74:newsprox@cluster0.fam8ldo.mongodb.net/?retryWrites=true&w=majority'
-        )
-        db = self.conn['news']
-        self.collection = db['news_tb']
-        self.collection.create_index("date_time", unique=True)
-        self.collection.create_index("description", unique=True)
+    def __init__(self):
+        self.collection = get_collection()
+    # ...
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
