@@ -18,3 +18,5 @@ class NewsItem(scrapy.Item):
     date_time = scrapy.Field()
     description = scrapy.Field()
     len = scrapy.Field()
+    summary = scrapy.Field()
+    summary_len = scrapy.Field()
