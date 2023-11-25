@@ -30,6 +30,7 @@ class NewsScrapperPipeline:
             adapter['headline'] = adapter['headline'].strip()
             adapter['headline'] = ' '.join(adapter['headline'].split())
             adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+            adapter['headline'] = re.sub(r"[^a-zA-Z ]", '', adapter['headline'])
         except ValueError:
             print("string is None-type")
         
