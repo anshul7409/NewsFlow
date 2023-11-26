@@ -15,7 +15,6 @@ import re
 class NewsScrapperPipeline:
     def __init__(self):
         self.collection = get_collection()
-    # ...
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
@@ -26,14 +25,17 @@ class NewsScrapperPipeline:
             adapter['Src'] = ' '.join(adapter['Src'].split())
             adapter['headline'] = adapter['headline'].strip()
             adapter['headline'] = ' '.join(adapter['headline'].split())
-            adapter['description'] = re.sub(r"[^a-zA-Z ]", '', adapter['description'])
+            adapter['description'] = re.sub(r"[^a-zA-Z. ]", '', adapter['description'])
             adapter['headline'] = re.sub(r"[^a-zA-Z ]", '', adapter['headline'])
         except ValueError:
             print("string is None-type")
         
         if adapter['len']>=2000:
             adapter['description'] = adapter['description'][0:2000]
-            adapter['len'] = 2000
+            cut_off_index = adapter['description'].rfind('.')
+            if cut_off_index != -1:  
+                adapter['description'] = adapter['description'][:cut_off_index+1]
+            adapter['len'] = len(adapter['description'])
  
         # Convert date_time to datetime object
         date_time_str = adapter['date_time'].strip()
@@ -43,7 +45,7 @@ class NewsScrapperPipeline:
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
 
-        #Saving data into database
+        # Saving data into database
         try:
             self.collection.insert_one(dict(item))
         except pymongo.errors.DuplicateKeyError:
