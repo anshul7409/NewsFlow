@@ -6,6 +6,5 @@ def get_collection():
     )
     db = client['news']
     collection = db['news_tb']
-    collection.create_index("date_time", unique=True)
     collection.create_index("description", unique=True)
     return collection
