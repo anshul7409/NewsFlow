@@ -4,15 +4,15 @@ import scrapy
 from .list_of_topics import Topics
 from news_scrapper.items import NewsItem
 from .Db_conn import get_collection
-from transformers import pipeline
-import textwrap
+# from transformers import pipeline
+# import textwrap
 
 class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
     topics = Topics.topics_of_news
     # summarizer = pipeline('summarization',model="sshleifer/distilbart-cnn-12-6")
-    summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
+    # summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
     start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics]
     collection  = get_collection()
     
@@ -52,22 +52,21 @@ class NewsspiderSpider(scrapy.Spider):
         if news_content:
             item['description'] = ' '.join(news_content.getall())                                   
             item['len'] = len(item['description'])
-            if not self.collection.find_one({"description": item['description']}):  
-                yield self.parse_news_summary(response, item)
+            yield item
     
-    def parse_news_summary(self,response,item):
-        description = item['description']
-        summary = ""
-        t = 3
-        while t>0:
-            chunks = textwrap.wrap(description, 800)
-            res = self.summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
-            summary = ' '.join([summ['summary_text'] for summ in res])
-            description = summary
-            t-=1
-        item['summary'] = summary
-        item['summary_len'] = len(summary) 
-        return item
+    # def parse_news_summary(self,response,item):
+    #     description = item['description']
+    #     summary = ""
+    #     t = 3
+    #     while t>0:
+    #         chunks = textwrap.wrap(description, 800)
+    #         res = self.summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+    #         summary = ' '.join([summ['summary_text'] for summ in res])
+    #         description = summary
+    #         t-=1
+    #     item['summary'] = summary
+    #     item['summary_len'] = len(summary) 
+    #     return item
 
 # scrapy crawl newsspider -o news1.csv
 # o -> appending , O -> overwriting
