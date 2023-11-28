@@ -17,6 +17,7 @@ import re
 class NewsScrapperPipeline:
     def __init__(self):
         self.collection = get_collection()
+        # summarizer = pipeline('summarization',model="sshleifer/distilbart-cnn-12-6")
         self.summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)

@@ -10,8 +10,6 @@ class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
     topics = Topics.topics_of_news
-    # summarizer = pipeline('summarization',model="sshleifer/distilbart-cnn-12-6")
-    # summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
     start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics]
     collection  = get_collection()
     
