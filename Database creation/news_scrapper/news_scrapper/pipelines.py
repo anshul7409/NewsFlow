@@ -47,7 +47,25 @@ class NewsScrapperPipeline:
             adapter['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         except ValueError:
             spider.logger.error(f"Unable to parse date: {date_time_str}")
-
+        
+        #check if description already present or not
+        if self.collection.find_one({"description": adapter['description']}):
+                spider.logger.info(f"Item already exists: {adapter['description']}")
+                return item  # Skip this item
+        
+        # Summarize the description
+        description = adapter['description']
+        summary = ""
+        t = 3
+        while t>0:
+            chunks = textwrap.wrap(description, 800)
+            res = self.summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+            summary = ' '.join([summ['summary_text'] for summ in res])
+            description = summary
+            t-=1
+        adapter['summary'] = summary
+        adapter['summary_len'] = len(summary) 
+        
         # Saving data into database
         try:
             self.collection.insert_one(dict(item))
