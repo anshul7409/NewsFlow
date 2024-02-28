@@ -141,7 +141,7 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # It only has the train split, so we divide it overselves
-    ds_ra= load_dataset('cnn_dailymail','3.0.0',f'{"article"}--{"highlights"}',split='train')
+    ds_ra= load_dataset('ccdv/cnn_dailymail','3.0.0',f'{"article"}--{"highlights"}',split='train')
     ds_raw=[]
     for item in ds_ra:
       if(len(item['article'])<1500):
@@ -152,7 +152,7 @@ def get_ds(config):
 
 
     # Keep 90% for training, 10% for validation
-    train_ds_size = int(3000)
+    train_ds_size = int(15000)
     val_ds_size =len(ds_raw) - train_ds_size
     train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
