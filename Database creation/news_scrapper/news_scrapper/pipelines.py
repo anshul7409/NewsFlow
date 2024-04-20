@@ -21,7 +21,7 @@ class NewsScrapperPipeline:
         self.summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-
+        length = self.collection.count_documents({})
         # Remove unwanted spaces and characters
         try:
             adapter['description'] = re.sub(r"\.", " .", adapter['description'])
@@ -52,7 +52,7 @@ class NewsScrapperPipeline:
         #check if description already present or not
         if self.collection.find_one({"description": adapter['description']}):
                 spider.logger.info(f"Item already exists: {adapter['description']}")
-                return item  # Skip this item
+                return item,length  # Skip this item
         
         # Summarize the description
         description = adapter['description']
@@ -72,6 +72,6 @@ class NewsScrapperPipeline:
             self.collection.insert_one(dict(item))
         except pymongo.errors.DuplicateKeyError:
             spider.logger.error(f"Duplicated item found: {item['date_time']}")
-        return item
+        return  length
     
     # 'mongodb+srv://anshulrawat74:newsprox@cluster0.fam8ldo.mongodb.net/?retryWrites=true&w=majority'
