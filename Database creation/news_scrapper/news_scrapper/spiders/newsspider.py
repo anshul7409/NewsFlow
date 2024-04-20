@@ -10,12 +10,13 @@ class NewsspiderSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
     topics = Topics.topics_of_news
-    start_urls = ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics]
+    start_urls = ['https://www.indiatoday.in/search/' + topic for topic in topics] + ['https://timesofindia.indiatimes.com/topic/'+ topic for topic in topics] 
     collection  = get_collection()
     
     # openai_summarizer = openai_summarize.OpenAISummarize(Config.OPENAI_KEY)
 
     def parse(self, response):
+      if str(response)[5:].startswith("https://timesofindia"):
         news_data = response.css('div.uwU81')
         if news_data:
             for news_sample in news_data:
@@ -42,6 +43,10 @@ class NewsspiderSpider(scrapy.Spider):
                     item['headline'] = None
                     item['Src'] = None
                 yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
+      elif str(response)[5:].startswith("other link"):
+          print("india today")
+          print(response.urljoin(news_sample.css('a').attrib['href']))
+          pass 
 
     def parse_news_page(self, response):
         item = response.meta['item']
