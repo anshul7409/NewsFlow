@@ -113,7 +113,7 @@ def search():
     process.crawl(NewsSpider, topic=topic,username=email)
     process.start()
     user_document = users_collection.find_one({'email':email})
-    print(user_document[topic])
+    # print(user_document[topic])
     return jsonify({ topic : user_document[topic]})    
 
 if __name__ == "__main__":
