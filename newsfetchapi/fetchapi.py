@@ -6,6 +6,7 @@ from flask_bcrypt import Bcrypt
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
+from datetime import datetime
 import os
 
 app = Flask(__name__)
@@ -25,7 +26,9 @@ class NewsSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
 
-    def __init__(self, topic=None, *args, **kwargs):
+    def __init__(self, topic=None, username=None, *args, **kwargs):
+        self.username = username
+        self.topic = topic
         super(NewsSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
             'https://timesofindia.indiatimes.com/topic/' + topic
@@ -52,12 +55,17 @@ class NewsSpider(scrapy.Spider):
                         }
                         yield Request(item['url'], callback=self.parse_news_page, meta={'item': item})
         except:
-            return None
+            return {}
     def parse_news_page(self, response):
         item = response.meta['item']
         news_content = response.css('div.JuyWl ::text')
-        if news_content:
+        if news_content and item['date_time']:
+            date_time_str = item['date_time'].strip()
+            date_time_str = date_time_str.split(" (")[0] 
             item['description'] = ' '.join(news_content.getall())
+            item['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
+            #summarize function
+            users_collection.update_one({'email': self.username},{'$addToSet': {self.topic: item}},upsert=True)
             yield item
 
 @app.route("/register", methods=['POST'])
@@ -94,40 +102,19 @@ def profile():
         return jsonify({'message': f'Welcome, {session["email"]}!'})
     return jsonify({'message': 'You are not logged in'}), 401
 
-async def checkTopicName(topic):
-    # Your implementation to check if the topic exists
-    return True  # Return True for demonstration
-
-async def getSummary(topic):
-    # Your implementation to get the summary of the topic
-    return f"Summary of {topic}"
-
-
 @app.route("/search", methods=['POST'])
 def search():
     # TODO: if topic not found return some message
+    email = request.form['username']
     topic = request.args.get('topic')
     process = CrawlerProcess(settings={
         'FEED_FORMAT': 'json',
-        'FEED_URI': 'output.json'
     })
-    process.crawl(NewsSpider, topic=topic)
+    process.crawl(NewsSpider, topic=topic,username=email)
     process.start()
-    with open('output.json', 'r') as f:
-        data = f.read()
-
-    return jsonify({'result': data})
-    # exists = await checkTopicName(topic)
-    # if not exists:
-    #     return jsonify({'message' : "Topic not Found"}), 401
-    
-    # if 'email' in session:
-    #     # TODO: If the user is logged in, save the topic name in its Topic array
-    #     print("Topic is saved in User Data")
-
-    # # Return the summary of the topic
-    # summary = await getSummary(topic)
-    # return jsonify({'message' : 'Topic is being searched', 'summary': summary}), 201
+    user_document = users_collection.find_one({'email':email})
+    print(user_document[topic])
+    return jsonify({ topic : user_document[topic]})    
 
 if __name__ == "__main__":
     app.run(debug=True)
