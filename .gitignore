@@ -11,3 +11,6 @@ __pycache__/
 config.py
 
 venv/
+
+*.env
+
