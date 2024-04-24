@@ -12,7 +12,9 @@ from urllib.parse import quote_plus
 from datetime import datetime
 import os
 from transformers import pipeline
-
+from flask import copy_current_request_context
+from threading import Thread
+from scrapy.utils.project import get_project_settings
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -152,19 +154,26 @@ def profile():
 
 @app.route("/search", methods=['POST'])
 async def search():
-    # TODO: if topic not found return some message
-    # email = request.form['username']
-    ref_ids = []
-    email = session['email']
-    topic = request.args.get('topic')
-    process = CrawlerProcess(settings={
-        'FEED_FORMAT': 'json',
-    })
-    process.crawl(NewsSpider, topic=topic,username=email,ref_id = ref_ids)
-    process.start()
-    print(ref_ids)
-    users_collection.update_one({'email': email},{'$addToSet': {"topics" : {"topic_id": ref_ids, "topic_name": topic}}},upsert=True)
-    return jsonify({ "status" : "crawling done"})  
+    @copy_current_request_context
+    def process_search(email):
+        # Access request context within the separate thread
+        ref_ids = []
+        topic = request.args.get('topic')
+        process = CrawlerProcess(settings=get_project_settings())
+        process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
+        process.start()
+        print(ref_ids)
+        users_collection.update_one({'email': email}, {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}}, upsert=True)
+        print("Crawling done")
+
+    email = session.get('email')
+    if email is None:
+        return jsonify({"error": "User not authenticated"}), 401
+
+    search_thread = Thread(target=process_search, args=(email,))
+    search_thread.start()
+
+    return jsonify({"status": "processing request in background"})
 
 if __name__ == "__main__":
     app.run(debug=True)
