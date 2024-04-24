@@ -1,13 +1,18 @@
 from flask import Flask, request, jsonify, session, redirect, url_for
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.http import Request
+import re 
+import textwrap
 from flask_bcrypt import Bcrypt
+from Db_conn import get_collection
+import pymongo
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from datetime import datetime
 import os
+from transformers import pipeline
+
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -26,9 +31,12 @@ class NewsSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
 
-    def __init__(self, topic=None, username=None, *args, **kwargs):
+    def __init__(self, topic=None, username=None,ref_id = None, *args, **kwargs):
+        self.collection = get_collection()
         self.username = username
         self.topic = topic
+        self.ref_ids = ref_id
+        self.summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
         super(NewsSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
             'https://timesofindia.indiatimes.com/topic/' + topic
@@ -47,26 +55,65 @@ class NewsSpider(scrapy.Spider):
                         if '/<!-- -->' in text:
                             date_time_text = text.split('/<!-- -->')
                             date_time = date_time_text[1]
-                            if len(date_time_text) == 1:
-                                date_time = date_time_text[0]
-                        item = {
-                            'url': response.urljoin(news_sample.css('a').attrib['href']),
-                            'date_time': date_time
-                        }
-                        yield Request(item['url'], callback=self.parse_news_page, meta={'item': item})
+                            srcc = date_time_text[0]
+                            if len(date_time_text) == 1 :
+                              date_time = date_time_text[0]
+                              srcc = ''
+                        item = {}
+                        item['url'] = response.urljoin(news_sample.css('a').attrib['href'])
+                        item['headline'] = meta_.css('div.fHv_i span::text').get()
+                        item['Src'] = srcc
+                        item['date_time'] = date_time
+                        yield scrapy.Request(item['url'], callback=self.parse_news_page, meta={'item': item})
         except:
             return {}
+    
     def parse_news_page(self, response):
         item = response.meta['item']
         news_content = response.css('div.JuyWl ::text')
-        if news_content and item['date_time']:
-            date_time_str = item['date_time'].strip()
-            date_time_str = date_time_str.split(" (")[0] 
+        if news_content and item['date_time'] and item['headline'] and item['Src'] and item['url']:
             item['description'] = ' '.join(news_content.getall())
-            item['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
-            #summarize function
-            users_collection.update_one({'email': self.username},{'$addToSet': {self.topic: item}},upsert=True)
-            yield item
+            item['len'] = len(item['description'])
+            # Remove unwanted spaces and characters
+            item['description'] = re.sub(r"\.", " .", item['description'])
+            item['description'] = ' '.join(item['description'].split())
+            item['Src'] = ' '.join(item['Src'].split())
+            item['headline'] = item['headline'].strip()
+            item['headline'] = ' '.join(item['headline'].split())
+            item['description'] = re.sub(r"[^a-zA-Z. ]", '', item['description'])
+            item['headline'] = re.sub(r"[^a-zA-Z ]", '', item['headline'])
+            if item['len']>=2000:
+                item['description'] = item['description'][0:2000]
+                cut_off_index = item['description'].rfind('.')
+                if cut_off_index != -1:  
+                    item['description'] = item['description'][:cut_off_index+1]
+                item['len'] = len(item['description'])
+            topicitem = self.collection.find_one({"description": item['description']})
+            if topicitem:
+                print(f"Item already exists: {item['description']}")
+                id = topicitem["_id"]
+                if id not in self.ref_ids:
+                   self.ref_ids.append(id)
+            else:
+            # Summarize the description
+                description = item['description']
+                summary = ""
+                t = 3
+                while t>0:
+                    chunks = textwrap.wrap(description, 800)
+                    res = self.summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+                    summary = ' '.join([summ['summary_text'] for summ in res])
+                    description = summary
+                    t-=1
+                item['summary'] = summary
+                item['summary_len'] = len(summary) 
+
+                # Saving data into database
+                x =  self.collection.insert_one(dict(item))
+                id = x.inserted_id
+                if id not in self.ref_ids:
+                    self.ref_ids.append(id)
+        yield item
 
 @app.route("/register", methods=['POST'])
 def register():
@@ -78,7 +125,8 @@ def register():
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     print("hashed : " + hashed_password)
     user_data = {'email': email, 'password': hashed_password}
-    users_collection.insert_one(user_data)
+    user = users_collection.insert_one(user_data)
+    print(user.inserted_id)
     return jsonify({'message': 'User registered successfully!'})
 
 @app.route("/login", methods=['POST'])
@@ -103,18 +151,20 @@ def profile():
     return jsonify({'message': 'You are not logged in'}), 401
 
 @app.route("/search", methods=['POST'])
-def search():
+async def search():
     # TODO: if topic not found return some message
-    email = request.form['username']
+    # email = request.form['username']
+    ref_ids = []
+    email = session['email']
     topic = request.args.get('topic')
     process = CrawlerProcess(settings={
         'FEED_FORMAT': 'json',
     })
-    process.crawl(NewsSpider, topic=topic,username=email)
+    process.crawl(NewsSpider, topic=topic,username=email,ref_id = ref_ids)
     process.start()
-    user_document = users_collection.find_one({'email':email})
-    # print(user_document[topic])
-    return jsonify({ topic : user_document[topic]})    
+    print(ref_ids)
+    users_collection.update_one({'email': email},{'$addToSet': {"topics" : {"topic_id": ref_ids, "topic_name": topic}}},upsert=True)
+    return jsonify({ "status" : "crawling done"})  
 
 if __name__ == "__main__":
     app.run(debug=True)
