@@ -156,30 +156,6 @@ def profile():
     return jsonify({'message': 'You are not logged in'}), 401
 
 
-def process_search(email, topic, ref_ids):
-    process = CrawlerProcess(settings=get_project_settings())
-    process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
-    process.start()
-    print(ref_ids)
-    x = users_collection.find_one({"email": email})
-    notpresent = 1
-    if 'topics' in x:
-        dbtopic = x['topics']
-        for topic_dict in dbtopic:
-            if topic_dict['topic_name'] == topic:
-                users_collection.update_one(
-                    {'email': email, 'topics.topic_name': topic},
-                    {'$set': {'topics.$.topic_id': ref_ids}}
-                )
-                notpresent = 0
-                break  
-    if notpresent:
-        users_collection.update_one(
-            {'email': email},
-            {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
-            upsert=True
-        )
-    print("Crawling done")
 
 @app.route("/search", methods=['POST'])
 def search():
