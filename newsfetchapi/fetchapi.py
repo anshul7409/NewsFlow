@@ -5,7 +5,6 @@ import re
 import textwrap
 from flask_bcrypt import Bcrypt
 from Db_conn import get_collection
-import pymongo
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
@@ -15,6 +14,7 @@ from transformers import pipeline
 from flask import copy_current_request_context
 from threading import Thread
 from scrapy.utils.project import get_project_settings
+
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -90,13 +90,16 @@ class NewsSpider(scrapy.Spider):
                 if cut_off_index != -1:  
                     item['description'] = item['description'][:cut_off_index+1]
                 item['len'] = len(item['description'])
-            topicitem = self.collection.find_one({"description": item['description']})
-            if topicitem:
+        date_time_str = item['date_time'].strip()
+        date_time_str = date_time_str.split(" (")[0] 
+        item['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
+        topicitem = self.collection.find_one({"description": item['description']})
+        if topicitem:
                 print(f"Item already exists: {item['description']}")
                 id = topicitem["_id"]
                 if id not in self.ref_ids:
                    self.ref_ids.append(id)
-            else:
+        else:
             # Summarize the description
                 description = item['description']
                 summary = ""
@@ -153,27 +156,44 @@ def profile():
     return jsonify({'message': 'You are not logged in'}), 401
 
 @app.route("/search", methods=['POST'])
-async def search():
+def search():
+    ref_ids = []
     @copy_current_request_context
     def process_search(email):
         # Access request context within the separate thread
-        ref_ids = []
         topic = request.args.get('topic')
         process = CrawlerProcess(settings=get_project_settings())
         process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
         process.start()
         print(ref_ids)
-        users_collection.update_one({'email': email}, {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}}, upsert=True)
+        x = users_collection.find_one({"email": email})
+        notpresent = 1
+        if 'topics' in x:
+            dbtopic = x['topics']
+            for topic_dict in dbtopic:
+                if topic_dict['topic_name'] == topic:
+                    users_collection.update_one(
+                        {'email': email, 'topics.topic_name': topic},
+                        {'$set': {'topics.$.topic_id': ref_ids}}
+                    )
+                    notpresent = 0
+                    break  
+        # If 'topics' field doesn't exist, create a new document with the specified email and topic
+        if notpresent:
+            users_collection.update_one(
+                {'email': email},
+                {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
+                upsert=True
+            )
         print("Crawling done")
-
     email = session.get('email')
     if email is None:
         return jsonify({"error": "User not authenticated"}), 401
 
     search_thread = Thread(target=process_search, args=(email,))
     search_thread.start()
-
+    print(ref_ids)
     return jsonify({"status": "processing request in background"})
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     app.run(debug=True)
