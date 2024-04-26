@@ -11,9 +11,11 @@ from urllib.parse import quote_plus
 from datetime import datetime
 import os
 from transformers import pipeline
-from flask import copy_current_request_context
-from threading import Thread
 from scrapy.utils.project import get_project_settings
+from multiprocessing import Process, Queue
+from twisted.internet import reactor
+import scrapy.crawler as crawler
+from scrapy.utils.log import configure_logging
 
 
 app = Flask(__name__)
@@ -155,47 +157,61 @@ def profile():
         return jsonify({'message': f'Welcome, {session["email"]}!'})
     return jsonify({'message': 'You are not logged in'}), 401
 
-
+def run_spider(topic,email,ref_ids,q):
+    try:
+        configure_logging()
+        runner = crawler.CrawlerRunner()
+        deferred = runner.crawl(NewsSpider,topic=topic, username=email, ref_id=ref_ids)
+        deferred.addBoth(lambda _: reactor.stop())
+        reactor.run()
+        q.put(ref_ids)
+    except Exception as e:
+        q.put(e)
 
 @app.route("/search", methods=['POST'])
 def search():
+    global ref_ids
     ref_ids = []
-    @copy_current_request_context
-    def process_search(email):
-        # Access request context within the separate thread
-        topic = request.args.get('topic')
-        process = CrawlerProcess(settings=get_project_settings())
-        process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
-        process.start()
-        print(ref_ids)
-        x = users_collection.find_one({"email": email})
-        notpresent = 1
-        if 'topics' in x:
-            dbtopic = x['topics']
-            for topic_dict in dbtopic:
-                if topic_dict['topic_name'] == topic:
-                    users_collection.update_one(
-                        {'email': email, 'topics.topic_name': topic},
-                        {'$set': {'topics.$.topic_id': ref_ids}}
-                    )
-                    notpresent = 0
-                    break  
-        # If 'topics' field doesn't exist, create a new document with the specified email and topic
-        if notpresent:
-            users_collection.update_one(
-                {'email': email},
-                {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
-                upsert=True
-            )
-        print("Crawling done")
+    topic = request.args.get('topic')
     email = session.get('email')
-    if email is None:
-        return jsonify({"error": "User not authenticated"}), 401
-
-    search_thread = Thread(target=process_search, args=(email,))
-    search_thread.start()
-    print(ref_ids)
-    return jsonify({"status": "processing request in background"})
+    # process = CrawlerProcess(settings=get_project_settings())
+    # process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
+    # process.start()
+    # run_spider(topic,email,ref_ids)
+    # print(ref_ids)
+    # x = users_collection.find_one({"email": email})
+    # notpresent = 1
+    # if 'topics' in x:
+    #     dbtopic = x['topics']
+    #     for topic_dict in dbtopic:
+    #         if topic_dict['topic_name'] == topic:
+    #             users_collection.update_one(
+    #                 {'email': email, 'topics.topic_name': topic},
+    #                 {'$set': {'topics.$.topic_id': ref_ids}}
+    #             )
+    #             notpresent = 0
+    #             break  
+    # # If 'topics' field doesn't exist, create a new document with the specified email and topic
+    # if notpresent:
+    #     users_collection.update_one(
+    #         {'email': email},
+    #         {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
+    #             upsert=True
+    #     )
+    # print("Crawling done")
+    # if email is None:
+    #     return jsonify({"error": "User not authenticated"}), 401
+    # print(ref_ids)
+    # return jsonify({"topic_name": topic, "topic_id": [str(ref_id) for ref_id in ref_ids]})
+    q = Queue()
+    p = Process(target=run_spider, args=(topic,email,ref_ids,q))
+    p.start()
+    result = q.get()
+    p.join()
+    print(result)
+    if isinstance(result, Exception):
+        raise result  
+    return jsonify({"status":"done"})
 
 if __name__ == "__main__": 
     app.run(debug=True)
