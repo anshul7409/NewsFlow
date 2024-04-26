@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify, session
 import scrapy
 import re 
 from Db_conn import get_collection
-from transformers import pipeline
 from scrapy.utils.project import get_project_settings
 from scrapy.crawler import CrawlerProcess
 
@@ -16,7 +15,6 @@ class NewsSpider(scrapy.Spider):
         self.collection = get_collection()
         self.topic = topic
         self.description = descriptions
-        self.summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
         super(NewsSpider, self).__init__(*args, **kwargs)
         self.start_urls = [
             'https://timesofindia.indiatimes.com/topic/' + topic
