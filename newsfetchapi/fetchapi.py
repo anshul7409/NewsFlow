@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, session, redirect, url_for
 import scrapy
-from scrapy.crawler import CrawlerProcess
 import re 
 import textwrap
 from flask_bcrypt import Bcrypt
@@ -170,48 +169,41 @@ def run_spider(topic,email,ref_ids,q):
 
 @app.route("/search", methods=['POST'])
 def search():
-    global ref_ids
     ref_ids = []
     topic = request.args.get('topic')
     email = session.get('email')
-    # process = CrawlerProcess(settings=get_project_settings())
-    # process.crawl(NewsSpider, topic=topic, username=email, ref_id=ref_ids)
-    # process.start()
-    # run_spider(topic,email,ref_ids)
-    # print(ref_ids)
-    # x = users_collection.find_one({"email": email})
-    # notpresent = 1
-    # if 'topics' in x:
-    #     dbtopic = x['topics']
-    #     for topic_dict in dbtopic:
-    #         if topic_dict['topic_name'] == topic:
-    #             users_collection.update_one(
-    #                 {'email': email, 'topics.topic_name': topic},
-    #                 {'$set': {'topics.$.topic_id': ref_ids}}
-    #             )
-    #             notpresent = 0
-    #             break  
-    # # If 'topics' field doesn't exist, create a new document with the specified email and topic
-    # if notpresent:
-    #     users_collection.update_one(
-    #         {'email': email},
-    #         {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
-    #             upsert=True
-    #     )
-    # print("Crawling done")
-    # if email is None:
-    #     return jsonify({"error": "User not authenticated"}), 401
-    # print(ref_ids)
-    # return jsonify({"topic_name": topic, "topic_id": [str(ref_id) for ref_id in ref_ids]})
     q = Queue()
     p = Process(target=run_spider, args=(topic,email,ref_ids,q))
     p.start()
-    result = q.get()
     p.join()
-    print(result)
-    if isinstance(result, Exception):
-        raise result  
-    return jsonify({"status":"done"})
+    ref_ids = q.get()
+    # print(ref_ids)
+    if isinstance(ref_ids, Exception):
+        raise ref_ids  
+    x = users_collection.find_one({"email": email})
+    notpresent = 1
+    if 'topics' in x:
+        dbtopic = x['topics']
+        for topic_dict in dbtopic:
+            if topic_dict['topic_name'] == topic:
+                users_collection.update_one(
+                    {'email': email, 'topics.topic_name': topic},
+                    {'$set': {'topics.$.topic_id': ref_ids}}
+                )
+                notpresent = 0
+                break  
+    # If 'topics' field doesn't exist, create a new document with the specified email and topic
+    if notpresent:
+        users_collection.update_one(
+            {'email': email},
+            {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
+                upsert=True
+        )
+    print("Crawling done")
+    if email is None:
+        return jsonify({"error": "User not authenticated"}), 401
+    print(ref_ids)
+    return jsonify({"topic_name": topic, "topic_id": [str(ref_id) for ref_id in ref_ids]})
 
 if __name__ == "__main__": 
     app.run(debug=True)
