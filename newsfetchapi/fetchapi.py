@@ -10,7 +10,6 @@ from urllib.parse import quote_plus
 from datetime import datetime
 import os
 from transformers import pipeline
-from scrapy.utils.project import get_project_settings
 from multiprocessing import Process, Queue
 from twisted.internet import reactor
 import scrapy.crawler as crawler
@@ -20,6 +19,8 @@ from scrapy.utils.log import configure_logging
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 load_dotenv()
+
+#Users DataBase
 username = os.getenv('USERNAME')
 password = os.getenv('PASSWORD')
 DATABASE_URI = "mongodb+srv://{}:{}@cluster0.dqwgi9f.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0".format(quote_plus(username), quote_plus(password))
@@ -30,6 +31,7 @@ db = client['mydatabase']
 users_collection = db['users']
 
 
+#Scraping class
 class NewsSpider(scrapy.Spider):
     name = "newsspider"
     allowed_domains = ["timesofindia.indiatimes.com"]
@@ -91,10 +93,13 @@ class NewsSpider(scrapy.Spider):
                 if cut_off_index != -1:  
                     item['description'] = item['description'][:cut_off_index+1]
                 item['len'] = len(item['description'])
+        #handle Date and Time
         date_time_str = item['date_time'].strip()
         date_time_str = date_time_str.split(" (")[0] 
         item['date_time'] = datetime.strptime(date_time_str, '%b %d, %Y, %H:%M')
         topicitem = self.collection.find_one({"description": item['description']})
+        
+        #Check if description exists : if exists : return its object_Id from database else update and then store object_ID
         if topicitem:
                 print(f"Item already exists: {item['description']}")
                 id = topicitem["_id"]
@@ -121,6 +126,7 @@ class NewsSpider(scrapy.Spider):
                     self.ref_ids.append(id)
         yield item
 
+#register the user
 @app.route("/register", methods=['POST'])
 def register():
     email = request.form.get('email')
@@ -135,6 +141,7 @@ def register():
     print(user.inserted_id)
     return jsonify({'message': 'User registered successfully!'})
 
+#Login 
 @app.route("/login", methods=['POST'])
 def login():
     email = request.form.get('email')
@@ -145,17 +152,20 @@ def login():
         return jsonify({'message': 'Login successful!'})
     return jsonify({'message': 'Invalid email or password'}), 401
 
+#logout
 @app.route("/logout", methods=['POST'])
 def logout():
     session.pop('email', None)
     return jsonify({'message': 'Logged out successfully!'})
 
+#Get User Session
 @app.route("/profile", methods=['GET'])
 def profile():
     if 'email' in session:
         return jsonify({'message': f'Welcome, {session["email"]}!'})
     return jsonify({'message': 'You are not logged in'}), 401
 
+#Running scraping function
 def run_spider(topic,email,ref_ids,q):
     try:
         configure_logging()
@@ -178,8 +188,9 @@ def search():
     p.join()
     ref_ids = q.get()
     # print(ref_ids)
-    if isinstance(ref_ids, Exception):
+    if isinstance(ref_ids, Exception): #handling exception
         raise ref_ids  
+    #
     x = users_collection.find_one({"email": email})
     notpresent = 1
     if 'topics' in x:
@@ -199,10 +210,10 @@ def search():
             {'$addToSet': {"topics": {"topic_id": ref_ids, "topic_name": topic}}},
                 upsert=True
         )
-    print("Crawling done")
     if email is None:
         return jsonify({"error": "User not authenticated"}), 401
     print(ref_ids)
+    print("Crawling done")
     return jsonify({"topic_name": topic, "topic_id": [str(ref_id) for ref_id in ref_ids]})
 
 if __name__ == "__main__": 
