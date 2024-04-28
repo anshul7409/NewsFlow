@@ -1,3 +1,4 @@
+#TODO:Redis Server File
 from celery import Celery
 from flask import  jsonify
 from scrapy.crawler import CrawlerProcess
@@ -7,7 +8,6 @@ from scrapy.crawler import CrawlerProcess
 import re 
 import textwrap
 from Db_conn import get_collection
-import pymongo
 from datetime import datetime
 from transformers import pipeline
 import redis
