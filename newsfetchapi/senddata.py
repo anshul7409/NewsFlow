@@ -6,13 +6,16 @@ from scrapy.utils.project import get_project_settings
 from scrapy.crawler import CrawlerProcess
 import numpy as np
 from sklearn.cluster import KMeans
+from transformers import pipeline
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+import textwrap
 
 app = Flask(__name__)
 
 model_name = "BAAI/bge-large-en-v1.5"
 model_kwargs =  {"device" : "cpu"}
 encode_kwargs  = {"normalize_embeddings":False}
+summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
 
 embeddings = HuggingFaceBgeEmbeddings(
     model_name = model_name,
@@ -97,9 +100,16 @@ def getdata(item):
     print(selected_indices)
     for i in selected_indices:
       st +=" "+ item[i]
-    print(st)
-    return st
-
+    description = st
+    summary = ""
+    t = 3
+    while t>0:
+        chunks = textwrap.wrap(description, 800)
+        res = summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+        summary = ' '.join([summ['summary_text'] for summ in res])
+        description = summary
+        t-=1
+    return summary
 
 
 if __name__ == "__main__": 
