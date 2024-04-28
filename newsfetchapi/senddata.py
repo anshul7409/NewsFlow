@@ -4,8 +4,24 @@ import re
 from Db_conn import get_collection
 from scrapy.utils.project import get_project_settings
 from scrapy.crawler import CrawlerProcess
+import numpy as np
+from sklearn.cluster import KMeans
+from transformers import pipeline
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+import textwrap
 
 app = Flask(__name__)
+
+model_name = "BAAI/bge-large-en-v1.5"
+model_kwargs =  {"device" : "cpu"}
+encode_kwargs  = {"normalize_embeddings":False}
+summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
+
+embeddings = HuggingFaceBgeEmbeddings(
+    model_name = model_name,
+    model_kwargs = model_kwargs,
+    encode_kwargs = encode_kwargs
+)
 
 class NewsSpider(scrapy.Spider):
     name = "newsspider"
@@ -51,12 +67,50 @@ def search():
     process = CrawlerProcess(settings=get_project_settings())
     process.crawl(NewsSpider, topic=topic, descriptions=descriptions)
     process.start()
-    item = {topic : descriptions}
-    getdata(item)
-    return jsonify({topic: descriptions})
+    item = descriptions
+    x=getdata(item)
+    return jsonify({topic: x})
+
 
 def getdata(item):
-    print(item)
+
+    vectors = embeddings.embed_documents([item for item in item])
+    num_clusters = 4
+
+    # Perform K-means clustering
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(vectors)
+    # Find the closest embeddings to the centroids
+
+    # Create an empty list that will hold your closest points
+    closest_indices = []
+    st = ""
+
+    # Loop through the number of clusters you have
+    for i in range(num_clusters):
+        
+        # Get the list of distances from that particular cluster center
+        distances = np.linalg.norm(vectors - kmeans.cluster_centers_[i], axis=1)
+        
+        # Find the list position of the closest one (using argmin to find the smallest distance)
+        closest_index = np.argmin(distances)
+        
+        # Append that position to your closest indices list
+        closest_indices.append(closest_index)
+    selected_indices = sorted(closest_indices)
+    print(selected_indices)
+    for i in selected_indices:
+      st +=" "+ item[i]
+    description = st
+    summary = ""
+    t = 3
+    while t>0:
+        chunks = textwrap.wrap(description, 800)
+        res = summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+        summary = ' '.join([summ['summary_text'] for summ in res])
+        description = summary
+        t-=1
+    return summary
+
 
 if __name__ == "__main__": 
     app.run(debug=True)
