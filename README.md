@@ -4,7 +4,15 @@ Efficient News summarization with MAP Reduce AND Clustering Methodology
 
 ## Description
 
-An in-depth paragraph about your project and overview of use.
+NewsFlow is the Efficient summarization framework which summarizes Large Textual Data with Map reduce and Clustering Framework. Map reduce and clustering is implemented as a high-level concept here for serving unique purpose of summarization.
+
+**Workflow**:
+* *Dataset preparation* : Combined well known news datasets with our custom dataset for training model for efficient summarization.
+* *Data Fetching API* : Created custom API for data fetching and retrieval from multinews sources. Collected all news in No-SQL database.
+* *MAP reduce Framework* : This module divides the huge data into chunks based on the importance.
+* *Transformer model* : Fine Tune pretrained Transformer model, for summarization ofdata chunks. This model ensures efficient summarization of clusters.
+* *Model Deployment* : Hosted the model using Flask API.
+* *End-to-End demo* : end-to-end web application for showcase.
 
 ## Getting Started
 
