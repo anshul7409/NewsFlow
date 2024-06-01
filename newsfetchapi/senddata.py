@@ -7,21 +7,26 @@ from scrapy.crawler import CrawlerProcess
 import numpy as np
 from sklearn.cluster import KMeans
 from transformers import pipeline
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from sentence_transformers import SentenceTransformer
+# from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from sentence_transformers.quantization import quantize_embeddings
 import textwrap
 
 app = Flask(__name__)
+
+model = SentenceTransformer('all-mpnet-base-v2')
+
 
 model_name = "BAAI/bge-large-en-v1.5"
 model_kwargs =  {"device" : "cpu"}
 encode_kwargs  = {"normalize_embeddings":False}
 summarizer = pipeline('summarization',model="facebook/bart-large-cnn")
 
-embeddings = HuggingFaceBgeEmbeddings(
-    model_name = model_name,
-    model_kwargs = model_kwargs,
-    encode_kwargs = encode_kwargs
-)
+# embeddings = HuggingFaceBgeEmbeddings(
+#     model_name = model_name,
+#     model_kwargs = model_kwargs,
+#     encode_kwargs = encode_kwargs
+# )
 
 class NewsSpider(scrapy.Spider):
     name = "newsspider"
@@ -69,18 +74,24 @@ def search():
     process.start()
     item = descriptions
     x=getdata(item)
-    return jsonify({topic: x})
+    return jsonify({"data": x})
 
 
 def getdata(item):
-
-    vectors = embeddings.embed_documents([item for item in item])
-    num_clusters = 4
-
+    vec = model.encode([item for item in item])
+    binary_embeddings = quantize_embeddings(vec, precision="binary")
+    vec.tolist()
+    # vectors = embeddings.embed_documents([item for item in item])
+    print("----------")
+    print("----------------------------------------")
+    num_clusters = 7
+    print(type(vec))
+    # print(type(vectors))
     # Perform K-means clustering
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(vectors)
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(vec)
+    print(kmeans.labels_)
     # Find the closest embeddings to the centroids
-
+    
     # Create an empty list that will hold your closest points
     closest_indices = []
     st = ""
@@ -89,7 +100,7 @@ def getdata(item):
     for i in range(num_clusters):
         
         # Get the list of distances from that particular cluster center
-        distances = np.linalg.norm(vectors - kmeans.cluster_centers_[i], axis=1)
+        distances = np.linalg.norm(vec - kmeans.cluster_centers_[i], axis=1)
         
         # Find the list position of the closest one (using argmin to find the smallest distance)
         closest_index = np.argmin(distances)
@@ -98,19 +109,35 @@ def getdata(item):
         closest_indices.append(closest_index)
     selected_indices = sorted(closest_indices)
     print(selected_indices)
+    # summaries = []
+    x = []
     for i in selected_indices:
-      st +=" "+ item[i]
-    description = st
-    summary = ""
-    t = 3
-    while t>0:
-        chunks = textwrap.wrap(description, 800)
-        res = summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
-        summary = ' '.join([summ['summary_text'] for summ in res])
-        description = summary
-        t-=1
-    return summary
-
+        description = item[i]
+        x.append(description)
+        # summary = ""
+        # t = 3
+        # while t>0:
+        #     chunks = textwrap.wrap(description, 800)
+        #     res = summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+        #     summary = ' '.join([summ['summary_text'] for summ in res])
+        #     description = summary
+        #     t-=1
+        # summaries.append(summary)
+        # print(item[i])
+    # for i in selected_indices:
+    #   st +=" "+ item[i]
+    # description = st
+    # summary = ""
+    # t = 3
+    # while t>0:
+    #     chunks = textwrap.wrap(description, 800)
+    #     res = summarizer(chunks,max_length = 120,min_length = 30,do_sample = False)
+    #     summary = ' '.join([summ['summary_text'] for summ in res])
+    #     description = summary
+    #     t-=1
+    # return summary
+    # print(description)
+    return x
 
 if __name__ == "__main__": 
     app.run(debug=True)
