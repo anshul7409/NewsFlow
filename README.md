@@ -4,7 +4,7 @@ Efficient News summarization with MAP Reduce AND Clustering Methodology
 
 ## Description
 
-NewsFlow is the Efficient summarization framework which summarizes Large Textual Data with Map reduce and Clustering Framework. Map reduce and clustering is implemented as a high-level concept here for serving unique purpose of summarization.
+**NewsFlow** is the Efficient summarization framework which summarizes Large Textual Data with Map reduce and Clustering Framework. Map reduce and clustering is implemented as a high-level concept here for serving unique purpose of summarization.
 
 **Workflow**:
 * *Dataset preparation* : Combined well known news datasets with our custom dataset for training model for efficient summarization.
