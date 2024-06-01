@@ -54,6 +54,9 @@ npm install
 npm run dev                                                                                         
 ```
 
+# DEMO APP
+![image](https://github.com/anshul7409/NewsFlow/assets/79444489/11abf5a3-9f6a-4b3f-8d45-eed2bc9a4795)
+
 
 ## Authors
 
