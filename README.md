@@ -1,4 +1,4 @@
-# NEWSFLOW [![Cult Of Martians][cult-img]][cult]
+# NEWSFLOW 
 
 Efficient News summarization with MAP Reduce AND Clustering Methodology
 
