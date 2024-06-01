@@ -18,32 +18,42 @@
 
 ## Getting Started
 
-### Dependencies
+### MODEL API serving
 
+#### Dependencies
 * download dependencies
 ```
 pip install -r requirements.txt
 ```
 
-### Installing
-
-* How/where to download your program
-* Any modifications needed to be made to files/folders
-
-### Executing program
-
-* How to run the program
-* Step-by-step bullets
+#### Executing program
+* Go to NewFlow Folder
 ```
-code blocks for commands
+cd /'Newsflow API'
+```
+* Run Flask Server
+```
+flask --app Model_api  run --debug                                                                                               
 ```
 
-## Help
+### Running demo App
 
-Any advise for common problems or issues.
+#### Dependencies
+* Go to demo Folder
 ```
-command to run if program contains helper info
+cd /'demo'
 ```
+* download dependencies
+```
+npm install 
+```
+
+#### Executing program
+* Run App
+```
+npm run dev                                                                                         
+```
+
 
 ## Authors
 
