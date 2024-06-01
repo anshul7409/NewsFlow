@@ -1,6 +1,6 @@
 # NEWSFLOW 
 
-Efficient News summarization with MAP Reduce AND Clustering Methodology
+**Efficient News summarization with MAP Reduce AND Clustering Methodology**
 
 ## Description
 
