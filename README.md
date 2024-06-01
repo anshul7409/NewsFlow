@@ -14,6 +14,8 @@ Efficient News summarization with MAP Reduce AND Clustering Methodology
 * *Model Deployment* : Hosted the model using Flask API.
 * *End-to-End demo* : end-to-end web application for showcase.
 
+![image](https://github.com/anshul7409/NewsFlow/assets/79444489/eb27bc02-f906-4577-9146-9c22e835e80d)
+
 ## Getting Started
 
 ### Dependencies
