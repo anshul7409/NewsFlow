@@ -64,15 +64,15 @@ npm run dev
 
 ## Authors
 
-Contributors names and contact info
+Contributors names 
 
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+* [@Saurabh](https://github.com/Saurabh-2003)
+* [@Anurag](https://github.com/Anurag188)
 
 
 ## License
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+This project is licensed under the [MIT] License - see the LICENSE.md file for details
 
 ## Acknowledgments
 
